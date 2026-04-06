@@ -87,28 +87,27 @@ foreach ($cmd in $config.commands) {
         # slmgr.vbs 등 wscript 모달 명령어를 cscript로 자동 변환
         $execCommand = $cmd.command
         if ($execCommand -match "slmgr") {
-            $execCommand = $execCommand -replace "slmgr\.vbs", "slmgr.vbs"
             $execCommand = $execCommand -replace "slmgr", "cscript //nologo C:\Windows\System32\slmgr.vbs"
         }
 
-        # 명령어 실행 (stdout + stderr 모두 캡처)
-        $tempOut = [System.IO.Path]::GetTempFileName()
         $process = New-Object System.Diagnostics.Process
         $process.StartInfo.FileName = "cmd.exe"
-        $process.StartInfo.Arguments = "/c `"$execCommand`" > `"$tempOut`" 2>&1"
+        $process.StartInfo.Arguments = "/c $execCommand"
+        $process.StartInfo.RedirectStandardOutput = $true
+        $process.StartInfo.RedirectStandardError = $true
         $process.StartInfo.UseShellExecute = $false
         $process.StartInfo.CreateNoWindow = $true
+        $process.StartInfo.StandardOutputEncoding = [System.Text.Encoding]::GetEncoding(949)
+        $process.StartInfo.StandardErrorEncoding = [System.Text.Encoding]::GetEncoding(949)
 
         $process.Start() | Out-Null
 
         $timeoutMs = $cmd.timeout * 1000
         $exited = $process.WaitForExit($timeoutMs)
 
-        $output = ""
-        if (Test-Path $tempOut) {
-            $output = [System.IO.File]::ReadAllText($tempOut, [System.Text.Encoding]::GetEncoding(949))
-            Remove-Item $tempOut -Force -ErrorAction SilentlyContinue
-        }
+        $output = $process.StandardOutput.ReadToEnd()
+        $errorOutput = $process.StandardError.ReadToEnd()
+        if (-not $output -and $errorOutput) { $output = $errorOutput }
 
         if (-not $exited) {
             $process.Kill()
@@ -160,24 +159,22 @@ try {
     $wc2 = New-Object System.Net.WebClient
     $wc2.DownloadFile($imageUrl, $imageTemp)
 
-    # 잠금화면 이미지 복사
-    $destPath = $config.lockscreen.local_path
+    # 잠금화면 이미지를 고정 경로에 복사
+    $destPath = "C:\LockScreen\lockscreen.png"
     $destDir = Split-Path $destPath -Parent
     if (-not (Test-Path $destDir)) {
         New-Item -ItemType Directory -Path $destDir -Force | Out-Null
     }
     Copy-Item -Path $imageTemp -Destination $destPath -Force
 
-    # 레지스트리로 잠금화면 이미지 강제 설정
-    $regPath = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\Personalization"
+    # Windows 11 Home 호환 - PersonalizationCSP 레지스트리
+    $regPath = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\PersonalizationCSP"
     if (-not (Test-Path $regPath)) {
         New-Item -Path $regPath -Force | Out-Null
     }
-    Set-ItemProperty -Path $regPath -Name "LockScreenImage" -Value $destPath
-    Set-ItemProperty -Path $regPath -Name "NoChangingLockScreen" -Value 1 -Type DWord
-
-    # 그룹 정책 즉시 적용
-    gpupdate /force 2>&1 | Out-Null
+    Set-ItemProperty -Path $regPath -Name "LockScreenImagePath" -Value $destPath
+    Set-ItemProperty -Path $regPath -Name "LockScreenImageUrl" -Value $destPath
+    Set-ItemProperty -Path $regPath -Name "LockScreenImageStatus" -Value 1 -Type DWord
 
     $lockscreenResult.status = "success"
     $lockscreenResult.output = "잠금화면 이미지 설정 완료: $destPath"
