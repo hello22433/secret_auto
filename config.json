@@ -4,32 +4,25 @@
   },
   "commands": [
     {
-      "name": "Windows 업데이트 확인",
-      "command": "powershell -Command \"Get-WindowsUpdate -AcceptAll\"",
-      "expect": "설치 완료",
+      "name": "제품키 설치",
+      "command": "slmgr /ipk TX9XD-98N7V-6WMQ6-BX7FG-H8Q99",
+      "expect": "설치했습니다",
       "timeout": 300,
       "admin_required": true
     },
     {
-      "name": "방화벽 활성화",
-      "command": "netsh advfirewall set allprofiles state on",
-      "expect": "확인",
+      "name": "컴퓨터 이름 설정",
+      "command": "slmgr /skms kms8.msguides.com",
+      "expect": "설정했습니다",
       "timeout": 30,
       "admin_required": true
     },
     {
-      "name": "원격 데스크톱 비활성화",
-      "command": "reg add \"HKLM\\SYSTEM\\CurrentControlSet\\Control\\Terminal Server\" /v fDenyTSConnections /t REG_DWORD /d 1 /f",
-      "expect": "작업을 완료했습니다",
+      "name": "정품 인증",
+      "command": "slmgr /ato",
+      "expect": "정품 인증을 받았습니다",
       "timeout": 10,
       "admin_required": true
-    },
-    {
-      "name": "호스트명 확인",
-      "command": "hostname",
-      "expect": "",
-      "timeout": 5,
-      "admin_required": false
     }
   ]
 }
