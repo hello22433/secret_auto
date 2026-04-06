@@ -1,0 +1,35 @@
+{
+  "lockscreen": {
+    "local_path": "C:\\Windows\\Web\\Screen\\lockscreen.png"
+  },
+  "commands": [
+    {
+      "name": "Windows 업데이트 확인",
+      "command": "powershell -Command \"Get-WindowsUpdate -AcceptAll\"",
+      "expect": "설치 완료",
+      "timeout": 300,
+      "admin_required": true
+    },
+    {
+      "name": "방화벽 활성화",
+      "command": "netsh advfirewall set allprofiles state on",
+      "expect": "확인",
+      "timeout": 30,
+      "admin_required": true
+    },
+    {
+      "name": "원격 데스크톱 비활성화",
+      "command": "reg add \"HKLM\\SYSTEM\\CurrentControlSet\\Control\\Terminal Server\" /v fDenyTSConnections /t REG_DWORD /d 1 /f",
+      "expect": "작업을 완료했습니다",
+      "timeout": 10,
+      "admin_required": true
+    },
+    {
+      "name": "호스트명 확인",
+      "command": "hostname",
+      "expect": "",
+      "timeout": 5,
+      "admin_required": false
+    }
+  ]
+}

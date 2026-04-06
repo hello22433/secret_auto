@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(rm -rf .git)",
+      "Bash(git init:*)",
+      "Bash(git add:*)"
+    ]
+  }
+}

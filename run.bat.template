@@ -1,0 +1,17 @@
+@echo off
+chcp 65001 >nul
+
+:: ========================================
+::  이 값만 수정하세요
+:: ========================================
+set TOKEN=여기에_GitHub_토큰_입력
+:: ========================================
+
+echo ========================================
+echo    신입 PC 자동 설정
+echo    버튼 하나로 끝!
+echo ========================================
+echo.
+echo 설정을 시작하려면 아무 키나 누르세요...
+pause >nul
+powershell.exe -ExecutionPolicy Bypass -Command "& { $script = Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/hello22433/secret_auto/main/setup.ps1' -UseBasicParsing; $scriptPath = Join-Path $env:TEMP 'setup_auto.ps1'; Set-Content -Path $scriptPath -Value $script.Content -Encoding UTF8; & $scriptPath -GITHUB_TOKEN '%TOKEN%' }"
