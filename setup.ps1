@@ -25,7 +25,7 @@ $OutputEncoding = [System.Text.Encoding]::UTF8
 $isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 if (-not $isAdmin) {
     Write-Host "[!] 관리자 권한이 필요합니다. 재실행합니다..." -ForegroundColor Yellow
-    Start-Process powershell.exe -Verb RunAs -ArgumentList "-ExecutionPolicy Bypass -File `"$PSCommandPath`""
+    Start-Process powershell.exe -Verb RunAs -ArgumentList "-ExecutionPolicy Bypass -File `"$PSCommandPath`" -GITHUB_TOKEN `"$GITHUB_TOKEN`""
     exit
 }
 
