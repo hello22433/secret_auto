@@ -38,12 +38,10 @@ Write-Host ""
 Write-Host "최신 설정을 다운로드 중..." -ForegroundColor Yellow -NoNewline
 
 try {
-    $headers = @{
-        "Authorization" = "token $GITHUB_TOKEN"
-        "Accept"        = "application/vnd.github.v3.raw"
-    }
-    $configUrl = "https://api.github.com/repos/$GITHUB_OWNER/$GITHUB_REPO/contents/config.json"
-    $configRaw = Invoke-RestMethod -Uri $configUrl -Headers $headers
+    $configUrl = "https://raw.githubusercontent.com/$GITHUB_OWNER/$GITHUB_REPO/master/config.json"
+    $wc = New-Object System.Net.WebClient
+    $wc.Encoding = [System.Text.Encoding]::UTF8
+    $configRaw = $wc.DownloadString($configUrl)
     $config = $configRaw | ConvertFrom-Json
     Write-Host " OK" -ForegroundColor Green
 }
@@ -150,12 +148,9 @@ $lockscreenResult = @{
 try {
     # GitHub에서 잠금화면 이미지 다운로드
     $imageTemp = "$env:TEMP\lockscreen_company.png"
-    $imageUrl = "https://api.github.com/repos/$GITHUB_OWNER/$GITHUB_REPO/contents/assets/lockscreen.png"
-    $imageHeaders = @{
-        "Authorization" = "token $GITHUB_TOKEN"
-        "Accept"        = "application/vnd.github.v3.raw"
-    }
-    Invoke-WebRequest -Uri $imageUrl -Headers $imageHeaders -OutFile $imageTemp -UseBasicParsing
+    $imageUrl = "https://raw.githubusercontent.com/$GITHUB_OWNER/$GITHUB_REPO/master/assets/lockscreen.png"
+    $wc2 = New-Object System.Net.WebClient
+    $wc2.DownloadFile($imageUrl, $imageTemp)
 
     # 잠금화면 이미지 복사
     $destPath = $config.lockscreen.local_path
