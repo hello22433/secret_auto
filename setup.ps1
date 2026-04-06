@@ -84,23 +84,31 @@ foreach ($cmd in $config.commands) {
     Write-Host "[$current/$total] $($cmd.name)..." -ForegroundColor Yellow -NoNewline
 
     try {
+        # slmgr.vbs 등 wscript 모달 명령어를 cscript로 자동 변환
+        $execCommand = $cmd.command
+        if ($execCommand -match "slmgr") {
+            $execCommand = $execCommand -replace "slmgr\.vbs", "slmgr.vbs"
+            $execCommand = $execCommand -replace "slmgr", "cscript //nologo C:\Windows\System32\slmgr.vbs"
+        }
+
+        # 명령어 실행 (stdout + stderr 모두 캡처)
+        $tempOut = [System.IO.Path]::GetTempFileName()
         $process = New-Object System.Diagnostics.Process
         $process.StartInfo.FileName = "cmd.exe"
-        $process.StartInfo.Arguments = "/c $($cmd.command)"
-        $process.StartInfo.RedirectStandardOutput = $true
-        $process.StartInfo.RedirectStandardError = $true
+        $process.StartInfo.Arguments = "/c `"$execCommand`" > `"$tempOut`" 2>&1"
         $process.StartInfo.UseShellExecute = $false
         $process.StartInfo.CreateNoWindow = $true
-        $process.StartInfo.StandardOutputEncoding = [System.Text.Encoding]::GetEncoding(949)
-        $process.StartInfo.StandardErrorEncoding = [System.Text.Encoding]::GetEncoding(949)
 
         $process.Start() | Out-Null
 
         $timeoutMs = $cmd.timeout * 1000
         $exited = $process.WaitForExit($timeoutMs)
 
-        $output = $process.StandardOutput.ReadToEnd()
-        $errorOutput = $process.StandardError.ReadToEnd()
+        $output = ""
+        if (Test-Path $tempOut) {
+            $output = [System.IO.File]::ReadAllText($tempOut, [System.Text.Encoding]::GetEncoding(949))
+            Remove-Item $tempOut -Force -ErrorAction SilentlyContinue
+        }
 
         if (-not $exited) {
             $process.Kill()
@@ -168,6 +176,9 @@ try {
     Set-ItemProperty -Path $regPath -Name "LockScreenImage" -Value $destPath
     Set-ItemProperty -Path $regPath -Name "NoChangingLockScreen" -Value 1 -Type DWord
 
+    # 그룹 정책 즉시 적용
+    gpupdate /force 2>&1 | Out-Null
+
     $lockscreenResult.status = "success"
     $lockscreenResult.output = "잠금화면 이미지 설정 완료: $destPath"
     Write-Host " OK" -ForegroundColor Green
@@ -232,7 +243,7 @@ try {
 
     foreach ($r in $results) {
         $statusEmoji = if ($r.status -eq "success") { "pass" } else { "FAIL" }
-        $note = if ($r.error) { $r.error } else { $r.output.Substring(0, [Math]::Min(50, $r.output.Length)) }
+        $note = if ($r.error) { $r.error } else { $r.output.Substring(0, [Math]::Min(200, $r.output.Length)) }
         $bodyLines += "| $($r.name) | $statusEmoji | $note |"
     }
 
